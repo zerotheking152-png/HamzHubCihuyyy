@@ -13,7 +13,7 @@ local Window = Fluent:CreateWindow({
     SubTitle = "Anjirr keren bet gwee",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
-    Acrylic = false,           -- <<< DIUBAH JADI FALSE BIAR GUI LANGSUNG MUNcul DI HP
+    Acrylic = false,
     Theme = CustomTheme,
     MinimizeKey = Enum.KeyCode.LeftControl
 })
@@ -65,7 +65,7 @@ do
     })
 end
 
--- ==================== TAB PLAYER (FLY + NOCLIP SUDAH DI-FIX TOTAL UNTUK HP) ====================
+-- ==================== TAB PLAYER (FLY + SPEED FIX TOTAL) ====================
 do
     Tabs.Player:AddSection("Player Features")
 
@@ -117,8 +117,9 @@ do
         end
     })
 
-    -- FLY FIX KHUSUS HP (Joystick) + PC
-    local flySpeed = 50
+    -- FLY + SPEED (getgenv biar slider work di semua executor HP)
+    getgenv().FlySpeed = 50   -- <<< DEFAULT 50, BISA DIUBAH LEWAT SLIDER
+
     local isFlying = false
     local flyBV, flyBG, flyConn = nil, nil, nil
 
@@ -151,7 +152,7 @@ do
                     local moveDir = hum.MoveDirection
 
                     local dir = Vector3.new(0, 0, 0)
-                    dir = dir + cam.CFrame.LookVector * (-moveDir.Z)   -- forward joystick HP
+                    dir = dir + cam.CFrame.LookVector * moveDir.Z          -- <<< DIBALIK (sekarang joystick DEPAN = MAJU kamera)
                     dir = dir + cam.CFrame.RightVector * moveDir.X
 
                     -- Vertical hanya PC
@@ -160,7 +161,7 @@ do
                         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0,1,0) end
                     end
 
-                    flyBV.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.new(0,0,0)
+                    flyBV.Velocity = dir.Magnitude > 0 and dir.Unit * getgenv().FlySpeed or Vector3.new(0,0,0)
                     flyBG.CFrame = cam.CFrame
                     hum.PlatformStand = true
                 end)
@@ -179,7 +180,9 @@ do
         Max = 200,
         Default = 50,
         Rounding = 0,
-        Callback = function(v) flySpeed = v end
+        Callback = function(v)
+            getgenv().FlySpeed = v   -- <<< INI YANG BIKIN SPEED LANGSUNG UPDATE (ga stuck lagi)
+        end
     })
 
     -- Noclip

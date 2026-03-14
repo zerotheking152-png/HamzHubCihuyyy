@@ -13,7 +13,7 @@ local Window = Fluent:CreateWindow({
     SubTitle = "Anjirr keren bet gwee",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,
+    Acrylic = false,           -- <<< DIUBAH JADI FALSE BIAR GUI LANGSUNG MUNcul DI HP
     Theme = CustomTheme,
     MinimizeKey = Enum.KeyCode.LeftControl
 })
@@ -47,9 +47,7 @@ do
         Default = false,
         Callback = function(v)
             getgenv().AutoFarm = v
-            while getgenv().AutoFarm do
-                task.wait(0.5)
-            end
+            while getgenv().AutoFarm do task.wait(0.5) end
         end
     })
 
@@ -67,10 +65,11 @@ do
     })
 end
 
--- ==================== TAB PLAYER (FLY FIX HP + PC) ====================
+-- ==================== TAB PLAYER (FLY + NOCLIP SUDAH DI-FIX TOTAL UNTUK HP) ====================
 do
     Tabs.Player:AddSection("Player Features")
 
+    -- Infinite Jump
     local jumpConnection = nil
     Tabs.Player:AddToggle("InfiniteJump", {
         Title = "Infinite Jump",
@@ -88,6 +87,7 @@ do
         end
     })
 
+    -- Super Speed
     local defaultWalkSpeed = 16
     Tabs.Player:AddToggle("SuperSpeed", {
         Title = "Super Speed (100)",
@@ -96,16 +96,13 @@ do
             local char = game.Players.LocalPlayer.Character
             if char and char:FindFirstChildOfClass("Humanoid") then
                 local hum = char:FindFirstChildOfClass("Humanoid")
-                if v then
-                    defaultWalkSpeed = hum.WalkSpeed
-                    hum.WalkSpeed = 100
-                else
-                    hum.WalkSpeed = defaultWalkSpeed
-                end
+                if v then defaultWalkSpeed = hum.WalkSpeed hum.WalkSpeed = 100
+                else hum.WalkSpeed = defaultWalkSpeed end
             end
         end
     })
 
+    -- High Jump
     local defaultJumpPower = 50
     Tabs.Player:AddToggle("HighJump", {
         Title = "High Jump (200)",
@@ -114,17 +111,13 @@ do
             local char = game.Players.LocalPlayer.Character
             if char and char:FindFirstChildOfClass("Humanoid") then
                 local hum = char:FindFirstChildOfClass("Humanoid")
-                if v then
-                    defaultJumpPower = hum.JumpPower
-                    hum.JumpPower = 200
-                else
-                    hum.JumpPower = defaultJumpPower
-                end
+                if v then defaultJumpPower = hum.JumpPower hum.JumpPower = 200
+                else hum.JumpPower = defaultJumpPower end
             end
         end
     })
 
-    -- FLY FIX KHUSUS HP (joystick) + PC
+    -- FLY FIX KHUSUS HP (Joystick) + PC
     local flySpeed = 50
     local isFlying = false
     local flyBV, flyBG, flyConn = nil, nil, nil
@@ -158,10 +151,10 @@ do
                     local moveDir = hum.MoveDirection
 
                     local dir = Vector3.new(0, 0, 0)
-                    dir = dir + cam.CFrame.LookVector * (-moveDir.Z)   -- forward maju
+                    dir = dir + cam.CFrame.LookVector * (-moveDir.Z)   -- forward joystick HP
                     dir = dir + cam.CFrame.RightVector * moveDir.X
 
-                    -- Vertical hanya PC (Space naik, Ctrl turun)
+                    -- Vertical hanya PC
                     if UserInputService.KeyboardEnabled then
                         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
                         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0,1,0) end

@@ -24,11 +24,10 @@ local Tabs = {
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
--- SERVICES
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
--- ==================== TAB MAIN (fitur lama TETEP 100%) ====================
+-- ==================== TAB MAIN ====================
 do
     Tabs.Main:AddSection("Fitur")
 
@@ -50,7 +49,6 @@ do
             getgenv().AutoFarm = v
             while getgenv().AutoFarm do
                 task.wait(0.5)
-                -- autofarm code here
             end
         end
     })
@@ -69,11 +67,10 @@ do
     })
 end
 
--- ==================== TAB PLAYER (FLY SUDAH DI-FIX KHUSUS HP) ====================
+-- ==================== TAB PLAYER (FLY FIX HP + PC) ====================
 do
     Tabs.Player:AddSection("Player Features")
 
-    -- Infinite Jump (ON/OFF)
     local jumpConnection = nil
     Tabs.Player:AddToggle("InfiniteJump", {
         Title = "Infinite Jump",
@@ -91,7 +88,6 @@ do
         end
     })
 
-    -- Super Speed
     local defaultWalkSpeed = 16
     Tabs.Player:AddToggle("SuperSpeed", {
         Title = "Super Speed (100)",
@@ -110,7 +106,6 @@ do
         end
     })
 
-    -- High Jump
     local defaultJumpPower = 50
     Tabs.Player:AddToggle("HighJump", {
         Title = "High Jump (200)",
@@ -129,7 +124,7 @@ do
         end
     })
 
-    -- ====================== FLY BARU (FIXED KHUSUS HP + PC) ======================
+    -- FLY FIX KHUSUS HP (joystick) + PC
     local flySpeed = 50
     local isFlying = false
     local flyBV, flyBG, flyConn = nil, nil, nil
@@ -160,28 +155,19 @@ do
                     if not isFlying or not hum or not root then return end
 
                     local cam = workspace.CurrentCamera
-                    local moveDir = hum.MoveDirection  -- ← INI YANG BIKIN JOYSTICK HP WORK!
+                    local moveDir = hum.MoveDirection
 
                     local dir = Vector3.new(0, 0, 0)
-                    dir = dir + cam.CFrame.LookVector * moveDir.Z
+                    dir = dir + cam.CFrame.LookVector * (-moveDir.Z)   -- forward maju
                     dir = dir + cam.CFrame.RightVector * moveDir.X
 
-                    -- Vertical hanya di PC (Space naik, Ctrl turun)
+                    -- Vertical hanya PC (Space naik, Ctrl turun)
                     if UserInputService.KeyboardEnabled then
-                        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                            dir = dir + Vector3.new(0, 1, 0)
-                        end
-                        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                            dir = dir - Vector3.new(0, 1, 0)
-                        end
+                        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
+                        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0,1,0) end
                     end
 
-                    if dir.Magnitude > 0 then
-                        flyBV.Velocity = dir.Unit * flySpeed
-                    else
-                        flyBV.Velocity = Vector3.new(0, 0, 0)
-                    end
-
+                    flyBV.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.new(0,0,0)
                     flyBG.CFrame = cam.CFrame
                     hum.PlatformStand = true
                 end)
@@ -200,12 +186,10 @@ do
         Max = 200,
         Default = 50,
         Rounding = 0,
-        Callback = function(v)
-            flySpeed = v
-        end
+        Callback = function(v) flySpeed = v end
     })
 
-    -- ====================== TEMBUS TEMBOK (Noclip) ======================
+    -- Noclip
     local noclipConn = nil
     Tabs.Player:AddToggle("Noclip", {
         Title = "Tembus Tembok (Noclip)",
@@ -228,9 +212,7 @@ do
                 local char = game.Players.LocalPlayer.Character
                 if char then
                     for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = true
-                        end
+                        if part:IsA("BasePart") then part.CanCollide = true end
                     end
                 end
             end
@@ -238,7 +220,7 @@ do
     })
 end
 
--- ==================== TOGGLE GUI HMZ (tetep sama) ====================
+-- ==================== TOGGLE GUI HMZ ====================
 local sg = Instance.new("ScreenGui")
 sg.Name = "FreyaaToggle"
 sg.ResetOnSpawn = false
@@ -310,7 +292,6 @@ frame.InputBegan:Connect(function(input)
     end
 end)
 
--- Draggable
 local dragging, dragInput, dragStart, startPos
 
 local function updateInput(input)
@@ -341,4 +322,4 @@ end)
 
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightControl then toggleGUI() end
-end).
+end)

@@ -24,7 +24,11 @@ local Tabs = {
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
--- ==================== TAB MAIN (fitur lama tetep ada) ====================
+-- SERVICES (biar Fly & Noclip lancar)
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+-- ==================== TAB MAIN (fitur lama TETEP 100%) ====================
 do
     Tabs.Main:AddSection("Fitur")
 
@@ -65,7 +69,7 @@ do
     })
 end
 
--- ==================== TAB PLAYER BARU (on/off sesuai request lo) ====================
+-- ==================== TAB PLAYER (SEMUA FITUR LAMA + FLY + TEMBUS TEMBOK) ====================
 do
     Tabs.Player:AddSection("Player Features")
 
@@ -127,9 +131,109 @@ do
             end
         end
     })
+
+    -- ====================== FLY BARU ======================
+    local flySpeed = 50
+    local isFlying = false
+    local flyBV, flyBG, flyConn = nil, nil, nil
+
+    Tabs.Player:AddToggle("Fly", {
+        Title = "Fly (WASD + Space naik / Ctrl turun)",
+        Default = false,
+        Callback = function(state)
+            isFlying = state
+            local char = game.Players.LocalPlayer.Character
+            if not char then return end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not hum or not root then return end
+
+            if state then
+                -- Buat BodyVelocity + BodyGyro
+                flyBV = Instance.new("BodyVelocity")
+                flyBV.MaxForce = Vector3.new(400000, 400000, 400000)
+                flyBV.Velocity = Vector3.new(0,0,0)
+                flyBV.Parent = root
+
+                flyBG = Instance.new("BodyGyro")
+                flyBG.MaxTorque = Vector3.new(400000, 400000, 400000)
+                flyBG.P = 9000
+                flyBG.Parent = root
+
+                flyConn = RunService.Heartbeat:Connect(function()
+                    if not isFlying then return end
+                    local cam = workspace.CurrentCamera
+                    local dir = Vector3.new(0,0,0)
+
+                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.new(0,1,0) end
+
+                    flyBV.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.new(0,0,0)
+                    flyBG.CFrame = cam.CFrame
+                    hum.PlatformStand = true
+                end)
+            else
+                if flyConn then flyConn:Disconnect() flyConn = nil end
+                if flyBV then flyBV:Destroy() flyBV = nil end
+                if flyBG then flyBG:Destroy() flyBG = nil end
+                if hum then hum.PlatformStand = false end
+            end
+        end
+    })
+
+    Tabs.Player:AddSlider("FlySpeed", {
+        Title = "Fly Speed",
+        Min = 10,
+        Max = 200,
+        Default = 50,
+        Rounding = 0,
+        Callback = function(v)
+            flySpeed = v
+        end
+    })
+
+    -- ====================== TEMBUS TEMBOK (Noclip) BARU ======================
+    local noclipConn = nil
+    Tabs.Player:AddToggle("Noclip", {
+        Title = "Tembus Tembok (Noclip)",
+        Default = false,
+        Callback = function(state)
+            if state then
+                if noclipConn then noclipConn:Disconnect() end
+                noclipConn = RunService.Stepped:Connect(function()
+                    local char = game.Players.LocalPlayer.Character
+                    if char then
+                        for _, part in pairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") and part.CanCollide then
+                                part.CanCollide = false
+                            end
+                        end
+                    end
+                end)
+            else
+                if noclipConn then 
+                    noclipConn:Disconnect() 
+                    noclipConn = nil 
+                end
+                -- Reset collide
+                local char = game.Players.LocalPlayer.Character
+                if char then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = true
+                        end
+                    end
+                end
+            end
+        end
+    })
 end
 
--- ==================== TOGGLE GUI HMZ (tetep sama) ====================
+-- ==================== TOGGLE GUI HMZ (tetep sama persis) ====================
 local sg = Instance.new("ScreenGui")
 sg.Name = "FreyaaToggle"
 sg.ResetOnSpawn = false
@@ -207,7 +311,6 @@ frame.InputBegan:Connect(function(input)
 end)
 
 -- Draggable
-local UIS = game:GetService("UserInputService")
 local dragging, dragInput, dragStart, startPos
 
 local function updateInput(input)
@@ -232,11 +335,11 @@ frame.InputChanged:Connect(function(input)
     end
 end)
 
-UIS.InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then updateInput(input) end
 end)
 
 -- Hotkey RightControl
-UIS.InputBegan:Connect(function(input)
+UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightControl then toggleGUI() end
 end)

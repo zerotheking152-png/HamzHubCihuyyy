@@ -20,11 +20,11 @@ local Window = Fluent:CreateWindow({
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Main" }),
-    Player = Window:AddTab({ Title = "Player" }),  -- MENU PLAYER BARU
+    Player = Window:AddTab({ Title = "Player" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
--- SERVICES (biar Fly & Noclip lancar)
+-- SERVICES
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -50,7 +50,7 @@ do
             getgenv().AutoFarm = v
             while getgenv().AutoFarm do
                 task.wait(0.5)
-                -- autofarm code here (lo bisa isi sendiri)
+                -- autofarm code here
             end
         end
     })
@@ -69,7 +69,7 @@ do
     })
 end
 
--- ==================== TAB PLAYER (SEMUA FITUR LAMA + FLY + TEMBUS TEMBOK) ====================
+-- ==================== TAB PLAYER (FLY SUDAH DI-FIX KHUSUS HP) ====================
 do
     Tabs.Player:AddSection("Player Features")
 
@@ -86,15 +86,12 @@ do
                     if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
                 end)
             else
-                if jumpConnection then 
-                    jumpConnection:Disconnect() 
-                    jumpConnection = nil 
-                end
+                if jumpConnection then jumpConnection:Disconnect() jumpConnection = nil end
             end
         end
     })
 
-    -- Super Speed (ON/OFF)
+    -- Super Speed
     local defaultWalkSpeed = 16
     Tabs.Player:AddToggle("SuperSpeed", {
         Title = "Super Speed (100)",
@@ -113,7 +110,7 @@ do
         end
     })
 
-    -- High Jump (ON/OFF)
+    -- High Jump
     local defaultJumpPower = 50
     Tabs.Player:AddToggle("HighJump", {
         Title = "High Jump (200)",
@@ -132,13 +129,13 @@ do
         end
     })
 
-    -- ====================== FLY BARU ======================
+    -- ====================== FLY BARU (FIXED KHUSUS HP + PC) ======================
     local flySpeed = 50
     local isFlying = false
     local flyBV, flyBG, flyConn = nil, nil, nil
 
     Tabs.Player:AddToggle("Fly", {
-        Title = "Fly (WASD + Space naik / Ctrl turun)",
+        Title = "Fly (Joystick HP / WASD PC)",
         Default = false,
         Callback = function(state)
             isFlying = state
@@ -149,7 +146,6 @@ do
             if not hum or not root then return end
 
             if state then
-                -- Buat BodyVelocity + BodyGyro
                 flyBV = Instance.new("BodyVelocity")
                 flyBV.MaxForce = Vector3.new(400000, 400000, 400000)
                 flyBV.Velocity = Vector3.new(0,0,0)
@@ -161,18 +157,31 @@ do
                 flyBG.Parent = root
 
                 flyConn = RunService.Heartbeat:Connect(function()
-                    if not isFlying then return end
+                    if not isFlying or not hum or not root then return end
+
                     local cam = workspace.CurrentCamera
-                    local dir = Vector3.new(0,0,0)
+                    local moveDir = hum.MoveDirection  -- ← INI YANG BIKIN JOYSTICK HP WORK!
 
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.new(0,1,0) end
+                    local dir = Vector3.new(0, 0, 0)
+                    dir = dir + cam.CFrame.LookVector * moveDir.Z
+                    dir = dir + cam.CFrame.RightVector * moveDir.X
 
-                    flyBV.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.new(0,0,0)
+                    -- Vertical hanya di PC (Space naik, Ctrl turun)
+                    if UserInputService.KeyboardEnabled then
+                        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                            dir = dir + Vector3.new(0, 1, 0)
+                        end
+                        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                            dir = dir - Vector3.new(0, 1, 0)
+                        end
+                    end
+
+                    if dir.Magnitude > 0 then
+                        flyBV.Velocity = dir.Unit * flySpeed
+                    else
+                        flyBV.Velocity = Vector3.new(0, 0, 0)
+                    end
+
                     flyBG.CFrame = cam.CFrame
                     hum.PlatformStand = true
                 end)
@@ -196,7 +205,7 @@ do
         end
     })
 
-    -- ====================== TEMBUS TEMBOK (Noclip) BARU ======================
+    -- ====================== TEMBUS TEMBOK (Noclip) ======================
     local noclipConn = nil
     Tabs.Player:AddToggle("Noclip", {
         Title = "Tembus Tembok (Noclip)",
@@ -215,11 +224,7 @@ do
                     end
                 end)
             else
-                if noclipConn then 
-                    noclipConn:Disconnect() 
-                    noclipConn = nil 
-                end
-                -- Reset collide
+                if noclipConn then noclipConn:Disconnect() noclipConn = nil end
                 local char = game.Players.LocalPlayer.Character
                 if char then
                     for _, part in pairs(char:GetDescendants()) do
@@ -233,7 +238,7 @@ do
     })
 end
 
--- ==================== TOGGLE GUI HMZ (tetep sama persis) ====================
+-- ==================== TOGGLE GUI HMZ (tetep sama) ====================
 local sg = Instance.new("ScreenGui")
 sg.Name = "FreyaaToggle"
 sg.ResetOnSpawn = false
@@ -257,7 +262,6 @@ uiStroke.Thickness = 1.5
 uiStroke.Transparency = 0.5
 uiStroke.Parent = frame
 
--- H (Merah)
 local h = Instance.new("TextLabel")
 h.Size = UDim2.new(0, 30, 1, 0)
 h.Position = UDim2.new(0, 0, 0, 0)
@@ -269,7 +273,6 @@ h.TextSize = 32
 h.TextXAlignment = Enum.TextXAlignment.Center
 h.Parent = frame
 
--- M (Biru)
 local m = Instance.new("TextLabel")
 m.Size = UDim2.new(0, 30, 1, 0)
 m.Position = UDim2.new(0, 30, 0, 0)
@@ -281,7 +284,6 @@ m.TextSize = 32
 m.TextXAlignment = Enum.TextXAlignment.Center
 m.Parent = frame
 
--- Z (Kuning)
 local z = Instance.new("TextLabel")
 z.Size = UDim2.new(0, 30, 1, 0)
 z.Position = UDim2.new(0, 60, 0, 0)
@@ -293,11 +295,9 @@ z.TextSize = 32
 z.TextXAlignment = Enum.TextXAlignment.Center
 z.Parent = frame
 
--- Hover effect
 frame.MouseEnter:Connect(function() frame.BackgroundTransparency = 0.2 end)
 frame.MouseLeave:Connect(function() frame.BackgroundTransparency = 0.4 end)
 
--- Fungsi toggle
 local visible = true
 local function toggleGUI()
     visible = not visible
@@ -339,7 +339,6 @@ UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then updateInput(input) end
 end)
 
--- Hotkey RightControl
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightControl then toggleGUI() end
-end)
+end).
